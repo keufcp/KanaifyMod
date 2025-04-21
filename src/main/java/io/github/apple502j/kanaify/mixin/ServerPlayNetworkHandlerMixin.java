@@ -7,38 +7,37 @@ import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-import net.minecraft.network.ClientConnection;
 import net.minecraft.network.message.SignedMessage;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ConnectedClientData;
-import net.minecraft.server.network.ServerCommonNetworkHandler;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.text.Text;
 
-@Mixin(ServerPlayNetworkHandler.class)
-public abstract class ServerPlayNetworkHandlerMixin extends ServerCommonNetworkHandler {
+@Mixin(value = ServerPlayNetworkHandler.class, priority = 1001)
+public class ServerPlayNetworkHandlerMixin { // ! 変更
     @Unique
     private static final Logger LOGGER = LoggerFactory.getLogger("kanaify");
+    
+    @ModifyArg(method = "handleDecoratedMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;broadcast(Lnet/minecraft/network/message/SignedMessage;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageType$Parameters;)V"), index = 0)
+    private SignedMessage convertMessage(SignedMessage message){
+        String original = message.getSignedContent();
+        //? 5文字以内なら処理しない
+        if (original.isBlank() || original.length() < 5 || !Japanizer.needsJapanize(original)){
+            return message;
+        }
+        try {
+            // 非同期処理が完了するまで待機して、結果を返す
+            SignedMessage result = Kanaifier.INSTANCE.convert(original).thenApply(converted -> {
+                return SignedMessage.ofUnsigned("%s (§6%s§f)".formatted(original, converted));
+            }).exceptionally(e -> {
+                LOGGER.error("Failed to kanaify: {}", original);
+                LOGGER.error("Caused by:", e.getCause());
+                return message; // エラー時には元のメッセージを返す
+            }).get(); // 非同期処理の結果を取得する
 
-    public ServerPlayNetworkHandlerMixin(MinecraftServer server, ClientConnection connection, ConnectedClientData clientData) {
-        super(server, connection, clientData);
-    }
-
-    @Inject(method = "handleDecoratedMessage", at = @At("RETURN"))
-    private void onMessageSent(SignedMessage message, CallbackInfo ci) {
-        String original = message.getContent().getString();
-        if (original.isBlank() || !Japanizer.needsJapanize(original)) return;
-        Kanaifier.INSTANCE.convert(original).thenAcceptAsync(converted -> {
-            PlayerManager manager = this.server.getPlayerManager();
-            manager.broadcast(Text.literal("%s (%s)".formatted(original, converted)), false);
-        }, this.server).exceptionally(e -> {
-            LOGGER.error("Failed to kanaify: {}", original);
-            LOGGER.error("Caused by:", e.getCause());
-            return null;
-        });
+            return result;
+        } catch (Exception e) {
+            LOGGER.error("Failed to process message synchronously: {}", e.getMessage());
+            return message; // 例外が発生した場合は元のメッセージを返す
+        }
     }
 }
