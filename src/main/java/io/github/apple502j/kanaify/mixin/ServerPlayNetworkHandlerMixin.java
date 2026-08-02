@@ -9,25 +9,25 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-import net.minecraft.network.message.SignedMessage;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
+import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
-@Mixin(value = ServerPlayNetworkHandler.class, priority = 1001)
-public class ServerPlayNetworkHandlerMixin { // ! 変更
+@Mixin(value = ServerGamePacketListenerImpl.class, priority = 1001)
+public class ServerPlayNetworkHandlerMixin {
     @Unique
     private static final Logger LOGGER = LoggerFactory.getLogger("kanaify");
-    
-    @ModifyArg(method = "handleDecoratedMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;broadcast(Lnet/minecraft/network/message/SignedMessage;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageType$Parameters;)V"), index = 0)
-    private SignedMessage convertMessage(SignedMessage message){
-        String original = message.getSignedContent();
+
+    @ModifyArg(method = "broadcastChatMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/players/PlayerList;broadcastChatMessage(Lnet/minecraft/network/chat/PlayerChatMessage;Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/network/chat/ChatType$Bound;)V"), index = 0)
+    private PlayerChatMessage convertMessage(PlayerChatMessage message) {
+        String original = message.signedContent();
         //? 5文字以内なら処理しない
-        if (original.isBlank() || original.length() < 5 || !Japanizer.needsJapanize(original)){
+        if (original.isBlank() || original.length() < 5 || !Japanizer.needsJapanize(original)) {
             return message;
         }
         try {
             // 非同期処理が完了するまで待機して、結果を返す
-            SignedMessage result = Kanaifier.INSTANCE.convert(original).thenApply(converted -> {
-                return SignedMessage.ofUnsigned("%s (§6%s§f)".formatted(original, converted));
+            PlayerChatMessage result = Kanaifier.INSTANCE.convert(original).thenApply(converted -> {
+                return PlayerChatMessage.system("%s (§6%s§f)".formatted(original, converted));
             }).exceptionally(e -> {
                 LOGGER.error("Failed to kanaify: {}", original);
                 LOGGER.error("Caused by:", e.getCause());

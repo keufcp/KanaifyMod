@@ -33,7 +33,7 @@ public final class Kanaifier {
         this.kanaProvider = Providers.get();
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10L))
-                .executor(Util.getMainWorkerExecutor())
+                .executor(Util.backgroundExecutor())
                 .build();
         LOGGER.info("Using {} kana provider", this.kanaProvider.getName());
     }

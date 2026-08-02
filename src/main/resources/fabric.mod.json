@@ -23,8 +23,8 @@
     "kanaify.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.16.0",
-    "minecraft": ">=1.21.5",
-    "java": ">=17"
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
   }
 }
