@@ -15,6 +15,8 @@ By default, this mod uses Google Translate API for Kana-Kanji conversion. This i
 
 To use the Yahoo! Japan Kana-Kanji conversion API, `YAHOO_API_CLIENT_ID` environment variable must be set to the client ID of the registered Yahoo! Japan application. (Client secret is not needed.) To register the app, please check the [Yahoo! Developer Network](https://e.developer.yahoo.co.jp/register) website. **Note that the API is ratelimited (50k messages per day).** 
 
+To use a self-hosted [zenzai-kkc-server](https://github.com/keufcp/zenzai-kkc-server), set the `KANAIFY_ZENZAI_URL` environment variable to its base URL, for example `http://192.168.1.111:61234`. When it is set, this provider takes precedence over the others. Unlike the Google endpoint, it converts long messages without truncating them.
+
 ## Credits and Licensing
 This source code is licensed under LGPL version 3.0.
 
@@ -38,6 +40,8 @@ JARファイルをmodsフォルダー内に入れれば完了です。
 既定では、かな漢字変換にはGoogle翻訳APIが利用されます。このモードをおすすめします。
 
 Yahoo! Japanのかな漢字変換APIを利用する場合は、`YAHOO_API_CLIENT_ID`環境変数にYahoo! Japanにて登録されたアプリケーションのクライアントIDを設定してください。(クライアントシークレットは不要です。) 登録に関しての詳細は、[Yahoo! デベロッパーネットワーク](https://e.developer.yahoo.co.jp/register)ウェブサイトを確認してください。**このAPIには速度制限(5万件/日)があります。**
+
+自前で立てた[zenzai-kkc-server](https://github.com/keufcp/zenzai-kkc-server)を利用する場合は、`KANAIFY_ZENZAI_URL`環境変数にそのベースURL(例: `http://192.168.1.111:61234`)を設定してください。設定されている場合、他のプロバイダーより優先されます。Googleのエンドポイントと違い、長いメッセージも途中で切れずに変換されます。
 
 ## クレジットとライセンス
 ソースコードはLGPL バージョン3.0のもとでライセンスされています。
