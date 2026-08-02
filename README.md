@@ -4,7 +4,7 @@
 Kanaify Mod is a Romaji-to-Kana/Kanji conversion mod for Minecraft 1.17 with Fabric. This mod automatically converts romaji-only messages in chat and sends the converted text.
 
 ## Requirements
-This mod requires Fabric mod loader, which can be downloaded from [their website](https://fabricmc.net/use/). **You'll also need Fabric API.**
+This mod requires Fabric mod loader, which can be downloaded from [their website](https://fabricmc.net/use/).
 
 This mod currently supports Minecraft 1.19.1. This mod has to be installed on the server to work in multiplayer.
 
@@ -30,7 +30,7 @@ See above for English description.
 Kanaify Modは、Minecraft Fabric 1.19用のローマ字かな漢字変換modです。チャットに送信されたローマ字のメッセージを自動的に変換し、変換されたメッセージを送信します。
 
 ## 要件
-Fabric modローダーが必要です。[ウェブサイト](https://fabricmc.net/use/)からダウンロードできます。**Fabric APIも必要です。**
+Fabric modローダーが必要です。[ウェブサイト](https://fabricmc.net/use/)からダウンロードできます。
 
 このmodはMinecraft 1.19.1をサポートしています。マルチプレイヤーで使用する場合は、サーバー側にインストールしてください。
 
