@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import com.github.ucchyocean.lc3.japanize.Japanizer;
 import com.github.ucchyocean.lc3.japanize.provider.Provider;
@@ -22,6 +23,8 @@ import net.minecraft.util.Util;
 
 public final class Kanaifier {
     public static final Logger LOGGER = LoggerFactory.getLogger("kanaifier");
+    // リクエストのタイムアウト (20 秒) より後に置く．通常はそちらが先に働く．
+    private static final long FALLBACK_TIMEOUT_SECONDS = 25L;
     private final Provider kanaProvider;
     private final HttpClient client;
     public static Kanaifier INSTANCE = new Kanaifier();
@@ -30,7 +33,7 @@ public final class Kanaifier {
         this.kanaProvider = Providers.get();
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10L))
-                .executor(Util.getMainWorkerExecutor())
+                .executor(Util.backgroundExecutor())
                 .build();
         LOGGER.info("Using {} kana provider", this.kanaProvider.getName());
     }
@@ -59,8 +62,32 @@ public final class Kanaifier {
                 });
     }
 
+    // 呼び出し元は元のメッセージを差し止めてから結果を待つため，例外を投げず必ず完了する
+    // future を返す．そうしないとメッセージが配信されないまま失われる．
     public CompletableFuture<String> convert(String romaji) {
-        String japanized = Japanizer.japanize(romaji);
-        return this.kanaProvider.fetch(this, japanized).thenApply(this.kanaProvider::parse);
+        final String japanized;
+        try {
+            japanized = Japanizer.japanize(romaji);
+        } catch (RuntimeException e) {
+            LOGGER.error("Failed to japanize: {}", romaji, e);
+            return CompletableFuture.completedFuture(romaji);
+        }
+
+        try {
+            return this.kanaProvider.fetch(this, japanized)
+                    .thenApply(this.kanaProvider::parse)
+                    .exceptionally((e) -> {
+                        LOGGER.error("Failed to kanaify: {}", japanized, e);
+                        return japanized;
+                    })
+                    // 変換結果が空でも原文だけを配信しないよう，かなへ落とす．
+                    .thenApply((converted) -> converted == null || converted.isBlank() ? japanized : converted)
+                    // 応答が返らなくてもメッセージが消えないよう，必ず完了させる．
+                    .completeOnTimeout(japanized, FALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
+            // 設定が不正で URI を組み立てられない場合など，future を返す前に失敗する経路．
+            LOGGER.error("Failed to kanaify: {}", japanized, e);
+            return CompletableFuture.completedFuture(japanized);
+        }
     }
 }
