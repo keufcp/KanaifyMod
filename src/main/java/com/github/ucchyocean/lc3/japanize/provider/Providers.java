@@ -3,6 +3,11 @@ package com.github.ucchyocean.lc3.japanize.provider;
 import io.github.apple502j.kanaify.Kanaifier;
 
 public enum Providers {
+    ZENZAI_KANA_API {
+        public Provider getInstance() {
+            return ZenzaiKanaAPI.INSTANCE;
+        }
+    },
     YAHOO_KANA_API {
         public Provider getInstance() {
             return YahooKanaAPI.INSTANCE;
